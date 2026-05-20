@@ -24,6 +24,14 @@ export interface AttendanceEntry {
   status: 'present' | 'absent';
 }
 
+export interface RemarkEntry {
+  id: string;
+  studentId: string;
+  date: string;
+  teacher: string;
+  text: string;
+}
+
 export interface TeacherSession {
   loggedIn: boolean;
 }

@@ -1,4 +1,4 @@
-import { Student, MarkEntry, AttendanceEntry } from '../types';
+import { Student, MarkEntry, AttendanceEntry, RemarkEntry } from '../types';
 
 // Utility for simulated network delay
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -16,7 +16,8 @@ const setStorage = (key: string, val: any) => {
 const KEYS = {
   STUDENTS: 'school_students',
   MARKS: 'school_marks',
-  ATTENDANCE: 'school_attendance'
+  ATTENDANCE: 'school_attendance',
+  REMARKS: 'school_remarks'
 };
 
 // Initial data for an empty state
@@ -73,8 +74,42 @@ export const api = {
     
     const attendance = getStorage<AttendanceEntry[]>(KEYS.ATTENDANCE, []).filter(a => a.studentId !== id);
     setStorage(KEYS.ATTENDANCE, attendance);
+
+    const remarks = getStorage<RemarkEntry[]>(KEYS.REMARKS, []).filter(r => r.studentId !== id);
+    setStorage(KEYS.REMARKS, remarks);
     
     return { success: true };
+  },
+
+  getRemarks: async (studentId?: string) => {
+    await delay(200);
+    let remarks = getStorage<RemarkEntry[]>(KEYS.REMARKS, []);
+    if (studentId) {
+      remarks = remarks.filter(r => r.studentId === studentId);
+    }
+    return remarks;
+  },
+
+  addRemark: async (studentId: string, teacher: string, text: string) => {
+    await delay(200);
+    const remarks = getStorage<RemarkEntry[]>(KEYS.REMARKS, []);
+    const newRemark: RemarkEntry = {
+      id: crypto.randomUUID(),
+      studentId,
+      teacher,
+      text,
+      date: new Date().toISOString()
+    };
+    remarks.push(newRemark);
+    setStorage(KEYS.REMARKS, remarks);
+    return newRemark;
+  },
+
+  deleteRemark: async (id: string) => {
+     await delay(200);
+     const remarks = getStorage<RemarkEntry[]>(KEYS.REMARKS, []).filter(r => r.id !== id);
+     setStorage(KEYS.REMARKS, remarks);
+     return { success: true };
   },
 
   getMarks: async (studentId?: string) => {

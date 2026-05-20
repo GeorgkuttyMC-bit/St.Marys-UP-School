@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Users, FileSpreadsheet, CalendarDays, Plus, Trash2, CheckCircle2, UserCheck, UserX, Save, Loader2 } from 'lucide-react';
-import { Student, Subject, ExamType, MarkEntry, AttendanceEntry } from '../types';
+import { Users, FileSpreadsheet, CalendarDays, Plus, Trash2, CheckCircle2, UserCheck, UserX, Save, Loader2, MessageSquareText } from 'lucide-react';
+import { Student, Subject, ExamType, MarkEntry, AttendanceEntry, RemarkEntry } from '../types';
 import { api } from '../lib/mockApi';
 import SchoolHeader from './SchoolHeader';
 
@@ -8,7 +8,7 @@ const SUBJECTS: Subject[] = ['Malayalam', 'English', 'Hindi', 'Mathematics', 'Ba
 const EXAMS: ExamType[] = ['Term 1', 'Term 2', 'Annual Exam'];
 
 export default function TeacherDashboard() {
-  const [activeTab, setActiveTab] = useState<'students' | 'marks' | 'attendance'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'marks' | 'attendance' | 'remarks'>('students');
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +27,10 @@ export default function TeacherDashboard() {
   // Attendance Tab State
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, 'present'|'absent'>>({});
+
+  // Remarks Tab State
+  const [remarksList, setRemarksList] = useState<RemarkEntry[]>([]);
+  const [newRemarkText, setNewRemarkText] = useState('');
 
   useEffect(() => {
     fetchStudents();
@@ -167,6 +171,47 @@ export default function TeacherDashboard() {
   };
 
 
+  // --- Remarks Actions ---
+  useEffect(() => {
+    if ((activeTab === 'remarks' || activeTab === 'marks') && selectedStudent) {
+      loadRemarksForStudent(selectedStudent);
+    }
+  }, [selectedStudent, activeTab]);
+
+  const loadRemarksForStudent = async (studentId: string) => {
+    try {
+      const data = await api.getRemarks(studentId);
+      setRemarksList(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAddRemark = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRemarkText.trim() || !selectedStudent) return;
+    try {
+      await api.addRemark(selectedStudent, 'Admin/Teacher', newRemarkText.trim());
+      setNewRemarkText('');
+      loadRemarksForStudent(selectedStudent);
+      showNotification('Remark added successfully', 'success');
+    } catch (e) {
+      console.error(e);
+      showNotification('Failed to add remark', 'error');
+    }
+  };
+
+  const handleDeleteRemark = async (id: string) => {
+    try {
+      await api.deleteRemark(id);
+      loadRemarksForStudent(selectedStudent);
+      showNotification('Remark deleted', 'success');
+    } catch (e) {
+      console.error(e);
+      showNotification('Failed to delete remark', 'error');
+    }
+  };
+
   if (loading && students.length === 0) {
     return (
       <div className="flex-1 flex justify-center items-center">
@@ -205,6 +250,12 @@ export default function TeacherDashboard() {
           className={`flex-1 flex items-center justify-center p-4 rounded-xl border-2 transition-all ${activeTab === 'attendance' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold' : 'border-transparent bg-white text-gray-600 hover:bg-gray-50 shadow-sm'}`}
         >
           <CalendarDays className="w-5 h-5 mr-2" /> Daily Attendance
+        </button>
+        <button 
+          onClick={() => setActiveTab('remarks')}
+          className={`flex-1 flex items-center justify-center p-4 rounded-xl border-2 transition-all ${activeTab === 'remarks' ? 'border-purple-500 bg-purple-50 text-purple-700 font-semibold' : 'border-transparent bg-white text-gray-600 hover:bg-gray-50 shadow-sm'}`}
+        >
+          <MessageSquareText className="w-5 h-5 mr-2" /> Remarks
         </button>
       </div>
 
@@ -371,6 +422,79 @@ export default function TeacherDashboard() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* REMARKS TAB */}
+        {activeTab === 'remarks' && (
+          <div className="p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+              <h2 className="text-xl font-bold text-gray-900">Student Remarks</h2>
+              <div className="flex gap-4">
+                <select 
+                  value={selectedStudent}
+                  onChange={e => setSelectedStudent(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-purple-400 outline-none"
+                >
+                   <option value="" disabled>Select a student</option>
+                   {students.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {students.length === 0 ? (
+               <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border"> Please add students first.</div>
+            ) : !selectedStudent ? (
+               <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-xl border"> Please select a student to add or view remarks.</div>
+            ) : (
+              <div className="max-w-3xl mx-auto flex flex-col gap-6">
+                
+                {/* Remarks Form */}
+                <div className="bg-purple-50/50 p-6 rounded-xl border border-purple-100 shadow-sm">
+                  <form onSubmit={handleAddRemark} className="flex gap-4">
+                     <input 
+                      type="text" 
+                      placeholder="Add a new remark (e.g., 'Excellent improvement in math')"
+                      value={newRemarkText}
+                      onChange={e => setNewRemarkText(e.target.value)}
+                      className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-400 outline-none"
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={!newRemarkText.trim()}
+                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-medium rounded-lg flex items-center transition-colors shadow-sm"
+                    >
+                      <Plus className="w-5 h-5 mr-1" /> Add Remark
+                    </button>
+                  </form>
+                </div>
+
+                {/* Remarks List */}
+                <div className="bg-white border rounded-xl shadow-sm overflow-hidden divide-y">
+                   {remarksList.length === 0 ? (
+                     <div className="p-8 text-center text-gray-500">No remarks found for this student.</div>
+                   ) : (
+                     remarksList.slice().reverse().map(remark => (
+                       <div key={remark.id} className="flex justify-between items-start p-6 hover:bg-gray-50 transition-colors">
+                         <div className="space-y-2 flex-1">
+                           <p className="text-gray-800 text-lg">{remark.text}</p>
+                           <div className="text-sm font-medium text-purple-600">
+                             {new Date(remark.date).toLocaleDateString()} &middot; By {remark.teacher}
+                           </div>
+                         </div>
+                         <button 
+                           onClick={() => handleDeleteRemark(remark.id)}
+                           className="text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors ml-4 shrink-0"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                       </div>
+                     ))
+                   )}
+                </div>
+
               </div>
             )}
           </div>
