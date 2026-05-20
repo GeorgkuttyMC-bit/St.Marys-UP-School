@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
-import { BookOpen, CalendarDays, Loader2, Award, Target } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { BookOpen, CalendarDays, Loader2, Award, Target, Download } from 'lucide-react';
 import { Student, MarkEntry, AttendanceEntry, ExamType } from '../types';
 import { api } from '../lib/mockApi';
 import SchoolHeader from './SchoolHeader';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface StudentDashboardProps {
   student: Student;
@@ -15,8 +17,10 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
   const [marks, setMarks] = useState<MarkEntry[]>([]);
   const [attendance, setAttendance] = useState<AttendanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [selectedExam, setSelectedExam] = useState<ExamType>('Term 1');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -49,6 +53,25 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!contentRef.current) return;
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(contentRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${student.name.replace(/\s+/g, '_')}_${activeTab}_report.pdf`);
+    } catch (e) {
+      console.error('Error generating PDF', e);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex justify-center items-center">
@@ -68,29 +91,41 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
 
   return (
     <div className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-      <SchoolHeader className="mb-8" />
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Welcome, {student.name} <span className="text-lg text-gray-500 font-normal ml-2">(Std: {student.standard})</span></h2>
-          <p className="text-gray-500 mt-1">View your academic progress and attendance records here.</p>
-        </div>
-        <div className="mt-4 md:mt-0 flex gap-4">
-           <button 
-            onClick={() => setActiveTab('marks')}
-            className={`px-6 py-2.5 rounded-xl font-medium transition-all ${activeTab === 'marks' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-          >
-            My Marks
-          </button>
-          <button 
-            onClick={() => setActiveTab('attendance')}
-            className={`px-6 py-2.5 rounded-xl font-medium transition-all ${activeTab === 'attendance' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-          >
-            Attendance
-          </button>
-        </div>
+      <div className="flex justify-end mb-4">
+        <button 
+          onClick={handleDownloadPdf}
+          disabled={downloading}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg flex items-center shadow-sm transition-colors"
+        >
+          {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+          Download PDF Report
+        </button>
       </div>
 
-      {activeTab === 'marks' && (
+      <div ref={contentRef} className="bg-slate-50 relative p-4 sm:p-6 lg:p-8 -mx-4 sm:-mx-6 lg:-mx-8 lg:mx-0 lg:p-0 bg-transparent">
+        <SchoolHeader className="mb-8" />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Student: {student.name} <span className="text-lg text-gray-500 font-normal ml-2">(Std: {student.standard})</span></h2>
+            <p className="text-gray-500 mt-1">Report Form: {activeTab === 'marks' ? 'Academic Marks' : 'Monthly Attendance'}</p>
+          </div>
+          <div className="mt-4 md:mt-0 flex gap-4" data-html2canvas-ignore="true">
+             <button 
+              onClick={() => setActiveTab('marks')}
+              className={`px-6 py-2.5 rounded-xl font-medium transition-all ${activeTab === 'marks' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              My Marks
+            </button>
+            <button 
+              onClick={() => setActiveTab('attendance')}
+              className={`px-6 py-2.5 rounded-xl font-medium transition-all ${activeTab === 'attendance' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              Attendance
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'marks' && (
          <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="text-xl font-bold text-gray-800 flex items-center">
@@ -218,6 +253,7 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
             </div>
          </div>
       )}
+      </div>
     </div>
   );
 }
