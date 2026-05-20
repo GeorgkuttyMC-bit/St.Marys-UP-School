@@ -63,12 +63,13 @@ export const api = {
   },
   addStudent: async (name: string, standard: string) => {
     try {
+      const newRef = doc(collection(db, 'students'));
       const newStudent: Student = {
-        id: crypto.randomUUID(),
+        id: newRef.id,
         name,
         standard
       };
-      await setDoc(doc(db, 'students', newStudent.id), newStudent);
+      await setDoc(newRef, newStudent);
       return newStudent;
     } catch (e) {
       handleFirestoreError(e, OperationType.CREATE, 'students');
@@ -99,14 +100,15 @@ export const api = {
   },
   addRemark: async (studentId: string, teacher: string, text: string) => {
     try {
+      const newRef = doc(collection(db, 'remarks'));
       const newRemark: RemarkEntry = {
-        id: crypto.randomUUID(),
+        id: newRef.id,
         studentId,
         teacher,
         text,
         date: new Date().toISOString()
       };
-      await setDoc(doc(db, 'remarks', newRemark.id), newRemark);
+      await setDoc(newRef, newRemark);
       return newRemark;
     } catch (e) {
       handleFirestoreError(e, OperationType.CREATE, 'remarks');
@@ -137,11 +139,12 @@ export const api = {
   },
   addMark: async (entry: Omit<MarkEntry, 'id'>) => {
     try {
+      const newRef = doc(collection(db, 'marks'));
       const newMark: MarkEntry = {
         ...entry,
-        id: crypto.randomUUID()
+        id: newRef.id
       };
-      await setDoc(doc(db, 'marks', newMark.id), newMark);
+      await setDoc(newRef, newMark);
       return newMark;
     } catch (e) {
       handleFirestoreError(e, OperationType.CREATE, 'marks');
