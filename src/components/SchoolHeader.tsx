@@ -1,8 +1,8 @@
 import { MapPin, Phone, Mail, BookOpen } from 'lucide-react';
 
-export default function SchoolHeader() {
+export default function SchoolHeader({ className = "" }: { className?: string }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8">
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 ${className}`}>
       <div className="flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
         <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
           <BookOpen className="w-12 h-12" />

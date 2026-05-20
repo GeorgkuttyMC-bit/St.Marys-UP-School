@@ -177,7 +177,7 @@ export default function TeacherDashboard() {
 
   return (
     <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-      <SchoolHeader />
+      <SchoolHeader className="mb-8" />
       {notification && (
         <div className={`fixed top-20 right-4 px-4 py-3 rounded-lg shadow-lg text-white z-50 flex items-center transition-all ${
           notification.type === 'success' ? 'bg-green-600' : 'bg-red-500'

@@ -68,7 +68,7 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
 
   return (
     <div className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-      <SchoolHeader />
+      <SchoolHeader className="mb-8" />
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Welcome, {student.name} <span className="text-lg text-gray-500 font-normal ml-2">(Std: {student.standard})</span></h2>
