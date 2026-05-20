@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Users, FileSpreadsheet, CalendarDays, Plus, Trash2, CheckCircle2, UserCheck, UserX, Save, Loader2, MessageSquareText } from 'lucide-react';
 import { Student, Subject, ExamType, MarkEntry, AttendanceEntry, RemarkEntry } from '../types';
-import { api } from '../lib/mockApi';
+import { api } from '../lib/api';
 import SchoolHeader from './SchoolHeader';
 
 const SUBJECTS: Subject[] = ['Malayalam', 'English', 'Hindi', 'Mathematics', 'Basic Science', 'Social Science'];

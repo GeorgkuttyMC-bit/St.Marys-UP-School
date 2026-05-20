@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BookOpen, CalendarDays, Loader2, Award, Target, Download } from 'lucide-react';
 import { Student, MarkEntry, AttendanceEntry, ExamType } from '../types';
-import { api } from '../lib/mockApi';
+import { api } from '../lib/api';
 import SchoolHeader from './SchoolHeader';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';

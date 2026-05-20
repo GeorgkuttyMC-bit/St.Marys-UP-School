@@ -4,6 +4,7 @@ import LandingPage from './components/LandingPage';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentDashboard from './components/StudentDashboard';
 import { Student } from './types';
+import { api } from './lib/api';
 
 export type ViewState = 'landing' | 'teacher_dashboard' | 'student_dashboard';
 
@@ -20,7 +21,8 @@ export default function App() {
     setView('student_dashboard');
   };
 
-  const handeLogout = () => {
+  const handeLogout = async () => {
+    await api.logout();
     setView('landing');
     setStudentUser(null);
   };

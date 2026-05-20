@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Represents a student in the school.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "standard": { "type": "string" }
+      },
+      "required": ["id", "name", "standard"]
+    },
+    "MarkEntry": {
+      "title": "Mark Entry",
+      "description": "Represents an exam mark for a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "examName": { "type": "string", "enum": ["Term 1", "Term 2", "Annual Exam"] },
+        "subject": { "type": "string", "enum": ["Malayalam", "English", "Hindi", "Mathematics", "Basic Science", "Social Science"] },
+        "mark": { "type": "number" },
+        "maxMark": { "type": "number" }
+      },
+      "required": ["id", "studentId", "examName", "subject", "mark", "maxMark"]
+    },
+    "AttendanceEntry": {
+      "title": "Attendance Entry",
+      "description": "Represents daily attendance for a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "description": "YYYY-MM-DD" },
+        "studentId": { "type": "string" },
+        "status": { "type": "string", "enum": ["present", "absent"] }
+      },
+      "required": ["id", "date", "studentId", "status"]
+    },
+    "RemarkEntry": {
+      "title": "Remark Entry",
+      "description": "Represents a teacher's remark for a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "date": { "type": "string" },
+        "teacher": { "type": "string" },
+        "text": { "type": "string" }
+      },
+      "required": ["id", "studentId", "date", "teacher", "text"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Collection of all students in the school."
+    },
+    "/marks/{markId}": {
+      "schema": { "$ref": "#/entities/MarkEntry" },
+      "description": "Collection of all marks entered by teachers for students."
+    },
+    "/attendance/{attendanceId}": {
+      "schema": { "$ref": "#/entities/AttendanceEntry" },
+      "description": "Collection of daily attendance records for students."
+    },
+    "/remarks/{remarkId}": {
+      "schema": { "$ref": "#/entities/RemarkEntry" },
+      "description": "Collection of teacher remarks for students."
+    }
+  }
+}
