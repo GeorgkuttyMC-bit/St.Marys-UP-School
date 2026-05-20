@@ -30,14 +30,16 @@ export const api = {
       console.error(e);
     }
   },
-  authTeacher: async () => {
-    try {
-      await signInWithPopup(auth, provider);
-      return { success: true };
-    } catch (e: any) {
-      console.error(e);
-      return { success: false, message: e.message };
-    }
+  authTeacher: async (code: string) => {
+    return new Promise<{success: boolean; message?: string}>((resolve) => {
+      setTimeout(() => {
+        if (code === 'Renju') {
+          resolve({ success: true });
+        } else {
+          resolve({ success: false, message: 'Invalid authorization code' });
+        }
+      }, 500);
+    });
   },
   authStudent: async (name: string, standard: string) => {
     try {
