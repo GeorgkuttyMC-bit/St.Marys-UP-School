@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { GraduationCap, BookOpenCheck, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, ensureAuthenticated, handleFirestoreError, OperationType } from '../firebase';
+import { Student } from '../types';
 
 interface LandingPageProps {
   onTeacherLogin: () => void;
@@ -20,19 +23,14 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
     setError('');
     
     try {
-      const res = await fetch('/api/auth/teacher', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: teacherCode.trim() })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
+      await ensureAuthenticated();
+      if (teacherCode.trim() === 'Renju') {
         onTeacherLogin();
       } else {
-        setError(data.message || 'Invalid Teacher Code');
+        setError('Invalid Teacher Code');
       }
     } catch (err) {
+      console.error(err);
       setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
@@ -47,19 +45,25 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
     setError('');
     
     try {
-      const res = await fetch('/api/auth/student', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: studentName.trim() })
-      });
-      const data = await res.json();
+      await ensureAuthenticated();
       
-      if (data.success) {
-        onStudentLogin(data.student);
+      const q = query(
+        collection(db, 'students'), 
+        where('name', '==', studentName.trim())
+      );
+      
+      const snapshot = await getDocs(q).catch((error) => {
+         return handleFirestoreError(error, OperationType.LIST, 'students');
+      });
+
+      if (!snapshot || snapshot.empty) {
+        setError('Student not found. Please check your name as per records.');
       } else {
-        setError(data.message || 'Student not found. Please check your name as per records.');
+        const doc = snapshot.docs[0];
+        onStudentLogin({ id: doc.id, ...doc.data() } as Student);
       }
     } catch (err) {
+      console.error(err);
       setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
