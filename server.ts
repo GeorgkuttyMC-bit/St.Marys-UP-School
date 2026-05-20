@@ -12,7 +12,7 @@ let students: Student[] = [
 let marks: MarkEntry[] = [];
 let attendance: AttendanceEntry[] = [];
 
-const TEACHER_CODE = 'Renju Teacher';
+const TEACHER_CODE = 'Renju';
 
 async function startServer() {
   const app = express();
