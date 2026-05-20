@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
+import { GoogleGenAI } from '@google/genai';
 import { Student, MarkEntry, AttendanceEntry, ExamType, Subject } from './src/types.js';
 
 // In-memory data store
@@ -18,9 +19,34 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Initialize Gemini AI Client (Lazy load to avoid crash if key is missing on startup)
+  let ai: GoogleGenAI | null = null;
+  if (process.env.GEMINI_API_KEY) {
+    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+
   app.use(express.json());
 
   // --- API Routes ---
+
+  // Example Gemini AI endpoint
+  app.post('/api/ask-ai', async (req, res) => {
+    if (!ai) {
+      return res.status(500).json({ success: false, error: 'GEMINI_API_KEY is not configured in the environment.' });
+    }
+    
+    try {
+      const { prompt } = req.body;
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt || 'Say hello!',
+      });
+      res.json({ success: true, text: response.text });
+    } catch (err: any) {
+      console.error('Gemini API Error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
 
   // Auth
   app.post('/api/auth/teacher', (req, res) => {
