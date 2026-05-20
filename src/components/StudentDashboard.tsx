@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, CalendarDays, Loader2, Award, Target } from 'lucide-react';
 import { Student, MarkEntry, AttendanceEntry, ExamType } from '../types';
+import { api } from '../lib/mockApi';
 
 interface StudentDashboardProps {
   student: Student;
@@ -29,9 +30,8 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const marksRes = await fetch(`/api/marks?studentId=${student.id}`);
-      const marksData = await marksRes.json();
-      setMarks(marksData);
+      const marksData = await api.getMarks(student.id);
+      setMarks(marksData as MarkEntry[]);
     } catch (e) {
       console.error(e);
     } finally {
@@ -41,9 +41,8 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
 
   const fetchAttendance = async () => {
     try {
-      const attRes = await fetch(`/api/attendance?studentId=${student.id}&month=${selectedMonth}`);
-      const attData = await attRes.json();
-      setAttendance(attData);
+      const attData = await api.getAttendance({ studentId: student.id, month: selectedMonth });
+      setAttendance(attData as AttendanceEntry[]);
     } catch (e) {
       console.error(e);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Users, FileSpreadsheet, CalendarDays, Plus, Trash2, CheckCircle2, UserCheck, UserX, Save, Loader2 } from 'lucide-react';
 import { Student, Subject, ExamType, MarkEntry, AttendanceEntry } from '../types';
+import { api } from '../lib/mockApi';
 
 const SUBJECTS: Subject[] = ['Malayalam', 'English', 'Hindi', 'Mathematics', 'Basic Science', 'Social Science'];
 const EXAMS: ExamType[] = ['Term 1', 'Term 2', 'Annual Exam'];
@@ -37,8 +38,7 @@ export default function TeacherDashboard() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/students');
-      const data = await res.json();
+      const data = await api.getStudents();
       setStudents(data);
       if (data.length > 0 && !selectedStudent) {
         setSelectedStudent(data[0].id);
@@ -57,16 +57,10 @@ export default function TeacherDashboard() {
     if (!newStudentName.trim()) return;
     
     try {
-      const res = await fetch('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newStudentName })
-      });
-      if (res.ok) {
-        setNewStudentName('');
-        fetchStudents();
-        showNotification('Student added successfully', 'success');
-      }
+      await api.addStudent(newStudentName);
+      setNewStudentName('');
+      fetchStudents();
+      showNotification('Student added successfully', 'success');
     } catch (e) {
       console.error(e);
       showNotification('Failed to add student', 'error');
@@ -76,7 +70,7 @@ export default function TeacherDashboard() {
   const handleDeleteStudent = async (id: string) => {
     if (!confirm('Are you sure? This will delete all marks and attendance for this student.')) return;
     try {
-      await fetch(`/api/students/${id}`, { method: 'DELETE' });
+      await api.deleteStudent(id);
       fetchStudents();
       showNotification('Student deleted', 'success');
     } catch (e) {
@@ -94,12 +88,11 @@ export default function TeacherDashboard() {
 
   const loadMarksForStudent = async (studentId: string) => {
     try {
-      const res = await fetch(`/api/marks?studentId=${studentId}`);
-      const data: MarkEntry[] = await res.json();
+      const data = await api.getMarks(studentId);
       
       const formState: Record<string, {mark: string, maxMark: string}> = {};
       SUBJECTS.forEach(sub => {
-        const existing = data.find(m => m.examName === selectedExam && m.subject === sub);
+        const existing = data.find((m: any) => m.examName === selectedExam && m.subject === sub);
         formState[sub] = existing 
           ? { mark: existing.mark.toString(), maxMark: existing.maxMark.toString() }
           : { mark: '', maxMark: '50' }; // Default 50 max marks
@@ -114,17 +107,7 @@ export default function TeacherDashboard() {
     try {
       const promises = Object.entries(marksForm).map(async ([subject, values]) => {
         if (!values.mark.trim()) return;
-        return fetch('/api/marks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            studentId: selectedStudent,
-            examName: selectedExam,
-            subject,
-            mark: Number(values.mark),
-            maxMark: Number(values.maxMark)
-          })
-        });
+        return api.saveMark(selectedStudent, selectedExam, subject, Number(values.mark), Number(values.maxMark));
       });
       
       await Promise.all(promises);
@@ -153,13 +136,12 @@ export default function TeacherDashboard() {
 
   const loadAttendanceForDate = async (date: string) => {
     try {
-      const res = await fetch(`/api/attendance?month=${date.substring(0, 7)}`);
-      const data: AttendanceEntry[] = await res.json();
+      const data = await api.getAttendance({ month: date.substring(0, 7) });
       
-      const dayData = data.filter(a => a.date === date);
+      const dayData = data.filter((a: any) => a.date === date);
       const state: Record<string, 'present'|'absent'> = {};
       
-      dayData.forEach(a => {
+      dayData.forEach((a: any) => {
         state[a.studentId] = a.status;
       });
       
@@ -172,15 +154,7 @@ export default function TeacherDashboard() {
 
   const handleMarkAttendance = async (studentId: string, status: 'present'|'absent') => {
     try {
-      await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentId,
-          date: attendanceDate,
-          status
-        })
-      });
+      await api.saveAttendance(studentId, attendanceDate, status);
       setAttendanceRecords(prev => ({ ...prev, [studentId]: status }));
       showNotification('Attendance recorded', 'success');
     } catch (e) {

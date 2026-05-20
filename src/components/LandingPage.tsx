@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GraduationCap, BookOpenCheck, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { Student } from '../types';
+import { api } from '../lib/mockApi';
 
 interface LandingPageProps {
   onTeacherLogin: () => void;
@@ -21,28 +22,12 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
     setError('');
     
     try {
-      const res = await fetch('/api/auth/teacher', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: teacherCode.trim() })
-      });
+      const res = await api.authTeacher(teacherCode.trim());
       
-      if (!res.ok) {
-        try {
-          const errorData = await res.json();
-          setError(errorData.message || 'Authentication failed.');
-        } catch (e) {
-          setError(`Server error (${res.status}). Ensure the backend is running.`);
-        }
-        return;
-      }
-
-      const data = await res.json();
-      
-      if (data.success) {
+      if (res.success) {
         onTeacherLogin();
       } else {
-        setError(data.message || 'Invalid Teacher Code');
+        setError(res.message || 'Invalid Teacher Code');
       }
     } catch (err: any) {
       console.error(err);
@@ -60,28 +45,12 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
     setError('');
     
     try {
-      const res = await fetch('/api/auth/student', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: studentName.trim() })
-      });
+      const res = await api.authStudent(studentName.trim());
       
-      if (!res.ok) {
-        try {
-          const errorData = await res.json();
-          setError(errorData.message || 'Student not found.');
-        } catch (e) {
-          setError(`Server error (${res.status}). Ensure the backend is running.`);
-        }
-        return;
-      }
-
-      const data = await res.json();
-      
-      if (data.success) {
-        onStudentLogin(data.student);
+      if (res.success) {
+        onStudentLogin(res.student);
       } else {
-        setError(data.message || 'Student not found. Please check your name as per records.');
+        setError(res.message || 'Student not found. Please check your name as per records.');
       }
     } catch (err: any) {
       console.error(err);
