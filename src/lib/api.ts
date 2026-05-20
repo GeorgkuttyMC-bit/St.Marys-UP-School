@@ -137,17 +137,38 @@ export const api = {
       return [];
     }
   },
-  addMark: async (entry: Omit<MarkEntry, 'id'>) => {
+  saveMark: async (studentId: string, examName: string, subject: string, mark: number, maxMark: number) => {
     try {
-      const newRef = doc(collection(db, 'marks'));
-      const newMark: MarkEntry = {
-        ...entry,
-        id: newRef.id
-      };
-      await setDoc(newRef, newMark);
-      return newMark;
+      const q = query(
+        collection(db, 'marks'),
+        where('studentId', '==', studentId)
+      );
+      const qs = await getDocs(q);
+
+      const existingMark = qs.docs.find(d => {
+        const data = d.data();
+        return data.examName === examName && data.subject === subject;
+      });
+
+      if (!existingMark) {
+        const newRef = doc(collection(db, 'marks'));
+        const newMark: MarkEntry = {
+          id: newRef.id,
+          studentId,
+          examName: examName as any,
+          subject: subject as any,
+          mark,
+          maxMark
+        };
+        await setDoc(newRef, newMark);
+        return newMark;
+      } else {
+        const docRef = doc(db, 'marks', existingMark.id);
+        await setDoc(docRef, { mark, maxMark }, { merge: true });
+        return { ...existingMark.data(), mark, maxMark } as MarkEntry;
+      }
     } catch (e) {
-      handleFirestoreError(e, OperationType.CREATE, 'marks');
+      handleFirestoreError(e, OperationType.UPDATE, 'marks');
       throw e;
     }
   },
@@ -177,17 +198,16 @@ export const api = {
       return [];
     }
   },
-  saveAttendance: async (date: string, records: Record<string, 'present'|'absent'>) => {
+  saveAttendance: async (studentId: string, date: string, status: 'present' | 'absent') => {
     try {
-      for (const [studentId, status] of Object.entries(records)) {
-        const entry: AttendanceEntry = {
-          id: `${date}_${studentId}`,
-          date,
-          studentId,
-          status
-        };
-        await setDoc(doc(db, 'attendance', entry.id), entry);
-      }
+      const id = `${date}_${studentId}`;
+      const entry: AttendanceEntry = {
+        id,
+        date,
+        studentId,
+        status
+      };
+      await setDoc(doc(db, 'attendance', id), entry);
       return { success: true };
     } catch (e) {
       handleFirestoreError(e, OperationType.CREATE, 'attendance');
