@@ -24,8 +24,8 @@ const initStudents = () => {
     const existing = localStorage.getItem(KEYS.STUDENTS);
     if (!existing) {
         setStorage(KEYS.STUDENTS, [
-            { id: '1', name: 'Aarav Kumar' },
-            { id: '2', name: 'Lakshmi Nair' },
+            { id: '1', name: 'Aarav Kumar', standard: '10' },
+            { id: '2', name: 'Lakshmi Nair', standard: '10' },
         ]);
     }
 }
@@ -38,10 +38,10 @@ export const api = {
     return { success: false, message: 'Invalid teacher code' };
   },
 
-  authStudent: async (name: string) => {
+  authStudent: async (name: string, standard: string) => {
     await delay(300);
     const students = getStorage<Student[]>(KEYS.STUDENTS, []);
-    const student = students.find((s) => s.name.toLowerCase() === name.toLowerCase().trim());
+    const student = students.find((s) => s.name.toLowerCase() === name.toLowerCase().trim() && s.standard === standard.trim());
     if (student) return { success: true, student };
     return { success: false, message: 'Student not found in records' };
   },
@@ -51,11 +51,12 @@ export const api = {
     return getStorage<Student[]>(KEYS.STUDENTS, []);
   },
 
-  addStudent: async (name: string) => {
+  addStudent: async (name: string, standard: string) => {
     await delay(200);
     if (!name.trim()) throw new Error('Name is required');
+    if (!standard.trim()) throw new Error('Standard is required');
     const students = getStorage<Student[]>(KEYS.STUDENTS, []);
-    const newStudent: Student = { id: crypto.randomUUID(), name: name.trim() };
+    const newStudent: Student = { id: crypto.randomUUID(), name: name.trim(), standard: standard.trim() };
     students.push(newStudent);
     setStorage(KEYS.STUDENTS, students);
     return newStudent;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookOpen, CalendarDays, Loader2, Award, Target } from 'lucide-react';
 import { Student, MarkEntry, AttendanceEntry, ExamType } from '../types';
 import { api } from '../lib/mockApi';
+import SchoolHeader from './SchoolHeader';
 
 interface StudentDashboardProps {
   student: Student;
@@ -67,9 +68,10 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
 
   return (
     <div className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <SchoolHeader />
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Welcome, {student.name}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Welcome, {student.name} <span className="text-lg text-gray-500 font-normal ml-2">(Std: {student.standard})</span></h2>
           <p className="text-gray-500 mt-1">View your academic progress and attendance records here.</p>
         </div>
         <div className="mt-4 md:mt-0 flex gap-4">

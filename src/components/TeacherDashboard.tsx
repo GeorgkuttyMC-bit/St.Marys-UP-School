@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, FileSpreadsheet, CalendarDays, Plus, Trash2, CheckCircle2, UserCheck, UserX, Save, Loader2 } from 'lucide-react';
 import { Student, Subject, ExamType, MarkEntry, AttendanceEntry } from '../types';
 import { api } from '../lib/mockApi';
+import SchoolHeader from './SchoolHeader';
 
 const SUBJECTS: Subject[] = ['Malayalam', 'English', 'Hindi', 'Mathematics', 'Basic Science', 'Social Science'];
 const EXAMS: ExamType[] = ['Term 1', 'Term 2', 'Annual Exam'];
@@ -16,6 +17,7 @@ export default function TeacherDashboard() {
 
   // Students Tab State
   const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentStandard, setNewStudentStandard] = useState('');
 
   // Marks Tab State
   const [selectedExam, setSelectedExam] = useState<ExamType>('Term 1');
@@ -54,11 +56,12 @@ export default function TeacherDashboard() {
   // --- Students Actions ---
   const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudentName.trim()) return;
+    if (!newStudentName.trim() || !newStudentStandard.trim()) return;
     
     try {
-      await api.addStudent(newStudentName);
+      await api.addStudent(newStudentName, newStudentStandard);
       setNewStudentName('');
+      setNewStudentStandard('');
       fetchStudents();
       showNotification('Student added successfully', 'success');
     } catch (e) {
@@ -174,6 +177,7 @@ export default function TeacherDashboard() {
 
   return (
     <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <SchoolHeader />
       {notification && (
         <div className={`fixed top-20 right-4 px-4 py-3 rounded-lg shadow-lg text-white z-50 flex items-center transition-all ${
           notification.type === 'success' ? 'bg-green-600' : 'bg-red-500'
@@ -210,7 +214,7 @@ export default function TeacherDashboard() {
           <div className="p-6 md:p-8">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Student Directory</h2>
             
-            <form onSubmit={handleAddStudent} className="flex gap-4 mb-8 max-w-xl">
+            <form onSubmit={handleAddStudent} className="flex flex-col md:flex-row gap-4 mb-8 max-w-2xl">
               <input 
                 type="text" 
                 placeholder="New Student Name"
@@ -218,7 +222,14 @@ export default function TeacherDashboard() {
                 onChange={e => setNewStudentName(e.target.value)}
                 className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 outline-none"
               />
-              <button disabled={!newStudentName.trim()} type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg flex items-center transition-colors">
+              <input 
+                type="text" 
+                placeholder="Standard/Class (e.g., 10A)"
+                value={newStudentStandard}
+                onChange={e => setNewStudentStandard(e.target.value)}
+                className="w-full md:w-48 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 outline-none"
+              />
+              <button disabled={!newStudentName.trim() || !newStudentStandard.trim()} type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg flex items-center justify-center transition-colors">
                 <Plus className="w-5 h-5 mr-1" /> Add
               </button>
             </form>
@@ -226,7 +237,10 @@ export default function TeacherDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {students.map(st => (
                 <div key={st.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="font-medium text-gray-800">{st.name}</div>
+                  <div>
+                    <div className="font-medium text-gray-800">{st.name}</div>
+                    <div className="text-sm text-gray-500">Std: {st.standard}</div>
+                  </div>
                   <button onClick={() => handleDeleteStudent(st.id)} className="text-red-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>

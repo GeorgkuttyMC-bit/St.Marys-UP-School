@@ -11,6 +11,7 @@ interface LandingPageProps {
 export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingPageProps) {
   const [teacherCode, setTeacherCode] = useState('');
   const [studentName, setStudentName] = useState('');
+  const [studentStandard, setStudentStandard] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -39,18 +40,18 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
 
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentName.trim()) return;
+    if (!studentName.trim() || !studentStandard.trim()) return;
     
     setLoading(true);
     setError('');
     
     try {
-      const res = await api.authStudent(studentName.trim());
+      const res = await api.authStudent(studentName.trim(), studentStandard.trim());
       
       if (res.success) {
         onStudentLogin(res.student);
       } else {
-        setError(res.message || 'Student not found. Please check your name as per records.');
+        setError(res.message || 'Student not found. Please check your name and standard as per records.');
       }
     } catch (err: any) {
       console.error(err);
@@ -88,9 +89,21 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
                   disabled={loading}
                 />
               </div>
+              <div>
+                <label htmlFor="studentStandard" className="block text-sm font-medium text-gray-700 mb-1">Standard / Class</label>
+                <input
+                  id="studentStandard"
+                  type="text"
+                  placeholder="E.g. 10A"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
+                  value={studentStandard}
+                  onChange={(e) => setStudentStandard(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
               <button 
                 type="submit" 
-                disabled={loading || !studentName.trim()}
+                disabled={loading || !studentName.trim() || !studentStandard.trim()}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-3 rounded-lg flex items-center justify-center transition-colors"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (

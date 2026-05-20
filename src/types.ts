@@ -1,6 +1,7 @@
 export interface Student {
   id: string;
   name: string;
+  standard: string;
 }
 
 export type Subject = 'Malayalam' | 'English' | 'Hindi' | 'Mathematics' | 'Basic Science' | 'Social Science';
