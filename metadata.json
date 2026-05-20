@@ -1,0 +1,8 @@
+{
+  "name": "St. Mary's UP School Portal",
+  "description": "School management portal for St. Mary's UP School Anchelpeety. Teachers can enter marks and attendance securely, while students can view their academic progress.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
