@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, CalendarDays, Loader2, Award, Target } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Student, MarkEntry, AttendanceEntry, ExamType } from '../types';
 
 interface StudentDashboardProps {
@@ -31,9 +29,8 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, 'marks'), where('studentId', '==', student.id));
-      const snap = await getDocs(q).catch(e => handleFirestoreError(e, OperationType.LIST, 'marks'));
-      const marksData = snap ? snap.docs.map(d => ({id: d.id, ...d.data()} as MarkEntry)) : [];
+      const marksRes = await fetch(`/api/marks?studentId=${student.id}`);
+      const marksData = await marksRes.json();
       setMarks(marksData);
     } catch (e) {
       console.error(e);
@@ -44,10 +41,8 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
 
   const fetchAttendance = async () => {
     try {
-      // Basic filtering for month client-side (to avoid complex queries matching substring in firebase)
-      const q = query(collection(db, 'attendance'), where('studentId', '==', student.id));
-      const snap = await getDocs(q).catch(e => handleFirestoreError(e, OperationType.LIST, 'attendance'));
-      const attData = snap ? snap.docs.map(d => ({id: d.id, ...d.data()} as AttendanceEntry)).filter(a => a.date.startsWith(selectedMonth)) : [];
+      const attRes = await fetch(`/api/attendance?studentId=${student.id}&month=${selectedMonth}`);
+      const attData = await attRes.json();
       setAttendance(attData);
     } catch (e) {
       console.error(e);
@@ -177,7 +172,7 @@ export default function StudentDashboard({ student }: StudentDashboardProps) {
                   <div className="text-center pb-6 border-b border-gray-100 mb-6">
                      <Target className="w-12 h-12 mx-auto text-emerald-500 mb-4" />
                      <div className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">Attendance Rate</div>
-                     <div className="text-4xl font-bold text-gray-900">{String(attendancePercentage)}%</div>
+                     <div className="text-4xl font-bold text-gray-900">{attendancePercentage}%</div>
                   </div>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center text-sm">

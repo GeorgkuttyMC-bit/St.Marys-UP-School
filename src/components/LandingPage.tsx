@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { GraduationCap, BookOpenCheck, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db, ensureAuthenticated, handleFirestoreError, OperationType } from '../firebase';
 import { Student } from '../types';
 
 interface LandingPageProps {
@@ -23,13 +21,30 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
     setError('');
     
     try {
-      await ensureAuthenticated();
-      if (teacherCode.trim() === 'Renju') {
+      const res = await fetch('/api/auth/teacher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: teacherCode.trim() })
+      });
+      
+      if (!res.ok) {
+        try {
+          const errorData = await res.json();
+          setError(errorData.message || 'Authentication failed.');
+        } catch (e) {
+          setError(`Server error (${res.status}). Ensure the backend is running.`);
+        }
+        return;
+      }
+
+      const data = await res.json();
+      
+      if (data.success) {
         onTeacherLogin();
       } else {
-        setError('Invalid Teacher Code');
+        setError(data.message || 'Invalid Teacher Code');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setError('Connection error. Please try again.');
     } finally {
@@ -45,24 +60,30 @@ export default function LandingPage({ onTeacherLogin, onStudentLogin }: LandingP
     setError('');
     
     try {
-      await ensureAuthenticated();
-      
-      const q = query(
-        collection(db, 'students'), 
-        where('name', '==', studentName.trim())
-      );
-      
-      const snapshot = await getDocs(q).catch((error) => {
-         return handleFirestoreError(error, OperationType.LIST, 'students');
+      const res = await fetch('/api/auth/student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: studentName.trim() })
       });
-
-      if (!snapshot || snapshot.empty) {
-        setError('Student not found. Please check your name as per records.');
-      } else {
-        const doc = snapshot.docs[0];
-        onStudentLogin({ id: doc.id, ...doc.data() } as Student);
+      
+      if (!res.ok) {
+        try {
+          const errorData = await res.json();
+          setError(errorData.message || 'Student not found.');
+        } catch (e) {
+          setError(`Server error (${res.status}). Ensure the backend is running.`);
+        }
+        return;
       }
-    } catch (err) {
+
+      const data = await res.json();
+      
+      if (data.success) {
+        onStudentLogin(data.student);
+      } else {
+        setError(data.message || 'Student not found. Please check your name as per records.');
+      }
+    } catch (err: any) {
       console.error(err);
       setError('Connection error. Please try again.');
     } finally {

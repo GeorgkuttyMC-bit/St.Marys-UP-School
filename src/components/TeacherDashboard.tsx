@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Users, FileSpreadsheet, CalendarDays, Plus, Trash2, CheckCircle2, UserCheck, UserX, Save, Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Student, Subject, ExamType, MarkEntry, AttendanceEntry } from '../types';
 
 const SUBJECTS: Subject[] = ['Malayalam', 'English', 'Hindi', 'Mathematics', 'Basic Science', 'Social Science'];
@@ -21,11 +19,11 @@ export default function TeacherDashboard() {
   // Marks Tab State
   const [selectedExam, setSelectedExam] = useState<ExamType>('Term 1');
   const [selectedStudent, setSelectedStudent] = useState<string>('');
-  const [marksForm, setMarksForm] = useState<Record<string, {id?: string, mark: string, maxMark: string}>>({});
+  const [marksForm, setMarksForm] = useState<Record<string, {mark: string, maxMark: string}>>({});
   
   // Attendance Tab State
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
-  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, {id?: string, status: 'present'|'absent'}>>({});
+  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, 'present'|'absent'>>({});
 
   useEffect(() => {
     fetchStudents();
@@ -39,13 +37,11 @@ export default function TeacherDashboard() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, 'students')).catch(error => handleFirestoreError(error, OperationType.LIST, 'students'));
-      if(snap) {
-         const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Student));
-         setStudents(data);
-         if (data.length > 0 && !selectedStudent) {
-           setSelectedStudent(data[0].id);
-         }
+      const res = await fetch('/api/students');
+      const data = await res.json();
+      setStudents(data);
+      if (data.length > 0 && !selectedStudent) {
+        setSelectedStudent(data[0].id);
       }
     } catch (e) {
       console.error(e);
@@ -61,10 +57,16 @@ export default function TeacherDashboard() {
     if (!newStudentName.trim()) return;
     
     try {
-      await addDoc(collection(db, 'students'), { name: newStudentName.trim() }).catch(error => handleFirestoreError(error, OperationType.CREATE, 'students'));
-      setNewStudentName('');
-      fetchStudents();
-      showNotification('Student added successfully', 'success');
+      const res = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newStudentName })
+      });
+      if (res.ok) {
+        setNewStudentName('');
+        fetchStudents();
+        showNotification('Student added successfully', 'success');
+      }
     } catch (e) {
       console.error(e);
       showNotification('Failed to add student', 'error');
@@ -74,20 +76,7 @@ export default function TeacherDashboard() {
   const handleDeleteStudent = async (id: string) => {
     if (!confirm('Are you sure? This will delete all marks and attendance for this student.')) return;
     try {
-      await deleteDoc(doc(db, 'students', id)).catch(err => handleFirestoreError(err, OperationType.DELETE, `students/${id}`));
-      
-      // Cascade delete marks
-      const marksSnap = await getDocs(query(collection(db, 'marks'), where('studentId', '==', id)));
-      for(const mDoc of marksSnap.docs) {
-          await deleteDoc(doc(db, 'marks', mDoc.id));
-      }
-      
-      // Cascade delete attendance
-      const attSnap = await getDocs(query(collection(db, 'attendance'), where('studentId', '==', id)));
-      for(const aDoc of attSnap.docs) {
-          await deleteDoc(doc(db, 'attendance', aDoc.id));
-      }
-
+      await fetch(`/api/students/${id}`, { method: 'DELETE' });
       fetchStudents();
       showNotification('Student deleted', 'success');
     } catch (e) {
@@ -105,16 +94,14 @@ export default function TeacherDashboard() {
 
   const loadMarksForStudent = async (studentId: string) => {
     try {
-      const q = query(collection(db, 'marks'), where('studentId', '==', studentId), where('examName', '==', selectedExam));
-      const snap = await getDocs(q).catch(err => handleFirestoreError(err, OperationType.LIST, 'marks'));
+      const res = await fetch(`/api/marks?studentId=${studentId}`);
+      const data: MarkEntry[] = await res.json();
       
-      const data: MarkEntry[] = snap ? snap.docs.map(d => ({ id: d.id, ...d.data() } as MarkEntry)) : [];
-      
-      const formState: Record<string, {id?: string, mark: string, maxMark: string}> = {};
+      const formState: Record<string, {mark: string, maxMark: string}> = {};
       SUBJECTS.forEach(sub => {
-        const existing = data.find(m => m.subject === sub);
+        const existing = data.find(m => m.examName === selectedExam && m.subject === sub);
         formState[sub] = existing 
-          ? { id: existing.id, mark: existing.mark.toString(), maxMark: existing.maxMark.toString() }
+          ? { mark: existing.mark.toString(), maxMark: existing.maxMark.toString() }
           : { mark: '', maxMark: '50' }; // Default 50 max marks
       });
       setMarksForm(formState);
@@ -127,20 +114,17 @@ export default function TeacherDashboard() {
     try {
       const promises = Object.entries(marksForm).map(async ([subject, values]) => {
         if (!values.mark.trim()) return;
-        
-        const markData = {
+        return fetch('/api/marks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             studentId: selectedStudent,
             examName: selectedExam,
             subject,
             mark: Number(values.mark),
             maxMark: Number(values.maxMark)
-        };
-
-        if (values.id) {
-           await setDoc(doc(db, 'marks', values.id), markData).catch(e => handleFirestoreError(e, OperationType.UPDATE, `marks/${values.id}`));
-        } else {
-           await addDoc(collection(db, 'marks'), markData).catch(e => handleFirestoreError(e, OperationType.CREATE, 'marks'));
-        }
+          })
+        });
       });
       
       await Promise.all(promises);
@@ -169,17 +153,17 @@ export default function TeacherDashboard() {
 
   const loadAttendanceForDate = async (date: string) => {
     try {
-      const q = query(collection(db, 'attendance'), where('date', '==', date));
-      const snap = await getDocs(q).catch(e => handleFirestoreError(e, OperationType.LIST, 'attendance'));
+      const res = await fetch(`/api/attendance?month=${date.substring(0, 7)}`);
+      const data: AttendanceEntry[] = await res.json();
       
-      const data: AttendanceEntry[] = snap ? snap.docs.map(d => ({ id: d.id, ...d.data() } as AttendanceEntry)) : [];
+      const dayData = data.filter(a => a.date === date);
+      const state: Record<string, 'present'|'absent'> = {};
       
-      const state: Record<string, {id?: string, status: 'present'|'absent'}> = {};
-      
-      data.forEach(a => {
-        state[a.studentId] = { id: a.id, status: a.status };
+      dayData.forEach(a => {
+        state[a.studentId] = a.status;
       });
       
+      // Default unset to empty string so buttons look unselected
       setAttendanceRecords(state);
     } catch (e) {
       console.error(e);
@@ -188,25 +172,16 @@ export default function TeacherDashboard() {
 
   const handleMarkAttendance = async (studentId: string, status: 'present'|'absent') => {
     try {
-      const existing = attendanceRecords[studentId];
-      if (existing?.id) {
-        await setDoc(doc(db, 'attendance', existing.id), {
+      await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           studentId,
           date: attendanceDate,
           status
-        }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `attendance/${existing.id}`));
-        setAttendanceRecords(prev => ({ ...prev, [studentId]: { id: existing.id, status } }));
-      } else {
-        const ref = await addDoc(collection(db, 'attendance'), {
-            studentId,
-            date: attendanceDate,
-            status
-        }).catch(e => handleFirestoreError(e, OperationType.CREATE, 'attendance'));
-        if(ref) {
-           setAttendanceRecords(prev => ({ ...prev, [studentId]: { id: ref.id, status } }));
-        }
-      }
-
+        })
+      });
+      setAttendanceRecords(prev => ({ ...prev, [studentId]: status }));
       showNotification('Attendance recorded', 'success');
     } catch (e) {
         console.error(e);
@@ -386,7 +361,7 @@ export default function TeacherDashboard() {
               <div className="max-w-3xl mx-auto">
                 <div className="bg-white border rounded-xl shadow-sm overflow-hidden divide-y">
                   {students.map(st => {
-                    const status = attendanceRecords[st.id]?.status;
+                    const status = attendanceRecords[st.id];
                     return (
                       <div key={st.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-gray-50 transition-colors">
                         <div className="font-medium text-gray-800 mb-3 sm:mb-0">{st.name}</div>
