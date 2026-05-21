@@ -181,16 +181,16 @@ export const api = {
       throw e;
     }
   },
-  getAttendance: async (studentId?: string, month?: string) => {
+  getAttendance: async (options?: { studentId?: string; month?: string }) => {
     try {
       let q = query(collection(db, 'attendance'));
-      if (studentId) {
-        q = query(collection(db, 'attendance'), where('studentId', '==', studentId));
+      if (options?.studentId) {
+        q = query(collection(db, 'attendance'), where('studentId', '==', options.studentId));
       }
       const qs = await getDocs(q);
       let records = qs.docs.map(d => d.data() as AttendanceEntry);
-      if (month) {
-        records = records.filter(r => r.date.startsWith(month));
+      if (options?.month) {
+        records = records.filter(r => r.date.startsWith(options.month));
       }
       return records;
     } catch (e) {
