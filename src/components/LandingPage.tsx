@@ -118,81 +118,40 @@ export default function LandingPage({
               </p>
 
               <form onSubmit={handleStudentSubmit} className="space-y-4">
-                {studentsList.length > 0 ? (
-                  <div>
-                    <label
-                      htmlFor="studentSelect"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Select Student
-                    </label>
-                    <select
-                      id="studentSelect"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors appearance-none bg-white"
-                      value={
-                        studentsList.some(
-                          (s) =>
-                            s.name === studentName &&
-                            s.standard === studentStandard,
-                        )
-                          ? `${studentName}|${studentStandard}`
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const [name, std] = e.target.value.split("|");
-                        setStudentName(name || "");
-                        setStudentStandard(std || "");
-                      }}
-                      disabled={loading}
-                    >
-                      <option value="" disabled>
-                        Select your name
-                      </option>
-                      {studentsList.map((s) => (
-                        <option key={s.id} value={`${s.name}|${s.standard}`}>
-                          {s.name} (Std: {s.standard})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <label
-                        htmlFor="studentName"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Full Name
-                      </label>
-                      <input
-                        id="studentName"
-                        type="text"
-                        placeholder="E.g. Aarav Kumar"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
-                        value={studentName}
-                        onChange={(e) => setStudentName(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="studentStandard"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Standard / Class
-                      </label>
-                      <input
-                        id="studentStandard"
-                        type="text"
-                        placeholder="E.g. 10A"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
-                        value={studentStandard}
-                        onChange={(e) => setStudentStandard(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                  </>
-                )}
+                <div>
+                  <label
+                    htmlFor="studentName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Full Name
+                  </label>
+                  <input
+                    id="studentName"
+                    type="text"
+                    placeholder="E.g. Aarav"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="studentStandard"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Standard / Class
+                  </label>
+                  <input
+                    id="studentStandard"
+                    type="text"
+                    placeholder="E.g. 1"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
+                    value={studentStandard}
+                    onChange={(e) => setStudentStandard(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={
